@@ -303,13 +303,10 @@ export const VideoTile = ({
       );
     }
 
-    if (
-      storeHmsAudioTrack &&
-      (storeHmsAudioTrack?.enabled && permissions?.mute)
-    ) {
+    if (permissions?.mute && permissions?.changeRole) {
       children.push(
         <ContextMenuItem
-          icon={storeHmsAudioTrack?.enabled ? <MicOnIcon /> : <MicOffIcon />}
+          icon={(peer.roleName == 'guest' || peer.roleName == 'speaker') ? <MicOnIcon /> : <MicOffIcon />}
           label={`${peer.roleName == 'guest' || peer.roleName == 'speaker' ? 'Disable Mic' : 'Enable Mic'} `}
           key="remoteDisableAudio"
           onClick={() => {
@@ -321,13 +318,11 @@ export const VideoTile = ({
       );
     }
 
-    if (
-      !showScreen &&
-      (storeHmsVideoTrack?.enabled && permissions?.mute)
-    ) {
+    if (permissions?.mute && permissions?.changeRole)
+     {
       children.push(
         <ContextMenuItem
-          icon={storeHmsVideoTrack?.enabled ? <CamOnIcon /> : <CamOffIcon />}
+          icon={peer.roleName == 'guest' ? <CamOnIcon /> : <CamOffIcon />}
           label={`${peer.roleName == 'guest' ? 'Disable Camera' : 'Enable Camera'} `}
           key="remoteDisableVideo"
           onClick={() => {
