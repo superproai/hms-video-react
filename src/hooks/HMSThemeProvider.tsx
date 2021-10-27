@@ -52,7 +52,7 @@ export const useHMSTheme = () => {
   const HMSContextConsumer = useContext(HMSThemeContext);
 
   if (HMSContextConsumer === null) {
-    throw new Error('HMSContext state variables are not set');
+    // throw new Error('HMSContext state variables are not set');
   }
 
   return HMSContextConsumer;
