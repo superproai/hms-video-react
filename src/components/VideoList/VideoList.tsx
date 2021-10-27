@@ -117,6 +117,10 @@ export interface VideoListProps {
    */
   videoTileControls?: React.ReactNode[];
   /**
+   * Array of <ContextMenuItem /> components
+   */
+  contextMenuItems?: JSX.Element[];
+  /**
    * Allow local peer to mute remote peers?
    */
   allowRemoteMute?: boolean;
@@ -174,6 +178,7 @@ export const VideoList = ({
   avatarType,
   compact = false,
   videoTileProps,
+  contextMenuItems
 }: VideoListProps) => {
   const { tw, appBuilder, tailwindConfig } = useHMSTheme();
   const styler = useMemo(
@@ -316,6 +321,7 @@ export const VideoList = ({
                           avatarType={avatarType}
                           compact={compact}
                           {...additionalProps}
+                          contextMenuItems={contextMenuItems}
                         />
                       </div>
                     );
