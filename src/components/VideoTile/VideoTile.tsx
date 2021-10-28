@@ -303,7 +303,7 @@ export const VideoTile = ({
       );
     }
 
-    if (permissions?.mute && permissions?.changeRole) {
+    if (permissions?.mute && permissions?.changeRole && peer.roleName != 'host') {
       children.push(
         <ContextMenuItem
           icon={(peer.roleName == 'guest' || peer.roleName == 'speaker') ? <MicOnIcon /> : <MicOffIcon />}
@@ -318,7 +318,7 @@ export const VideoTile = ({
       );
     }
 
-    if (permissions?.mute && permissions?.changeRole)
+    if (permissions?.mute && permissions?.changeRole && peer.roleName != 'host')
      {
       children.push(
         <ContextMenuItem
