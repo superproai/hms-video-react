@@ -24,7 +24,7 @@ const defaultClasses: AudioLevelIndicatorClasses = {
 
 export const AudioLevelBorder = ({
   level,
-  color = '#0F6CFF',
+  color = '#FF7D0D',
   displayShape,
   classes,
   audioTrackId,
