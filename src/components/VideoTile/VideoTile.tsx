@@ -474,7 +474,7 @@ export const VideoTile = ({
               showAudioLevel={showAudioLevel}
               audioLevel={audioLevel}
               audioLevelDisplayType={audioLevelDisplayType}
-              audioLevelDisplayColor={audioLevelDisplayColor}
+              audioLevelDisplayColor={'#FF7D0D'}
               displayShape={displayShape}
               audioTrackId={tileAudioTrack}
             />
