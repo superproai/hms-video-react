@@ -311,7 +311,7 @@ export const VideoTile = ({
           key="remoteDisableAudio"
           onClick={() => {
             
-            let role = (peer.roleName == 'guest' || peer.roleName == 'speaker') ? 'viewer' : 'speaker';
+            let role = (peer.roleName == 'guest' || peer.roleName == 'mutecamera') ? 'mutecameramic' : 'mutecamera';
             hmsActions.changeRole(peer.id, role, true);          
           }}
         />,
@@ -326,7 +326,7 @@ export const VideoTile = ({
           label={`${peer.roleName == 'guest' ? 'Disable Camera' : 'Enable Camera'} `}
           key="remoteDisableVideo"
           onClick={() => {
-            let role = (peer.roleName == 'guest') ? 'speaker' : 'guest';
+            let role = (peer.roleName == 'guest') ? 'mutecamera' : 'guest';
             hmsActions.changeRole(peer.id, role, true);          
           }}
         />,
