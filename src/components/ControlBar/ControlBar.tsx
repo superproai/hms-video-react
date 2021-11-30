@@ -71,6 +71,7 @@ export const ControlBar = ({
       onClick={screenshareButtonOnClick}
       key={2}
       label="Share"
+      id="hms-share"
     >
       <ShareScreenIcon />
     </Button>,
@@ -84,6 +85,7 @@ export const ControlBar = ({
       active={isChatOpen}
       key={4}
       label="Chat"
+      id="hms-chat"
     >
       <ChatUnreadIcon />
     </Button>,
@@ -99,6 +101,7 @@ export const ControlBar = ({
       onClick={audioButtonOnClick}
       key={0}
       label="Mic"
+      id="hms-mic"
     >
       {isAudioMuted ? <MicOffIcon /> : <MicOnIcon />}
     </Button>,
@@ -111,6 +114,7 @@ export const ControlBar = ({
       onClick={videoButtonOnClick}
       key={1}
       label="Video"
+      id="hms-video"
     >
       {isVideoMuted ? <CamOffIcon /> : <CamOnIcon />}
     </Button>,
