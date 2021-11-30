@@ -306,8 +306,8 @@ export const VideoTile = ({
     if (permissions?.mute && permissions?.changeRole && peer.roleName != 'host') {
       children.push(
         <ContextMenuItem
-          icon={(peer.roleName == 'guest' || peer.roleName == 'speaker') ? <MicOnIcon /> : <MicOffIcon />}
-          label={`${peer.roleName == 'guest' || peer.roleName == 'speaker' ? 'Disable Mic' : 'Enable Mic'} `}
+          icon={(peer.roleName == 'guest' || peer.roleName == 'speaker' || peer.roleName == 'mutecamera') ? <MicOnIcon /> : <MicOffIcon />}
+          label={`${peer.roleName == 'guest' || peer.roleName == 'speaker' || peer.roleName == 'mutecamera' ? 'Disable Mic' : 'Enable Mic'} `}
           key="remoteDisableAudio"
           onClick={() => {
             
