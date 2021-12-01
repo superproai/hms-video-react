@@ -179,7 +179,7 @@ export const ContextMenu = ({
   }
 
   return (
-    <div className={styler('root')} id="hms-more">
+    <div className={styler('root')}>
       <div className={styler('trigger')} onClick={handleClick}>
         {trigger || (
           <DotMenuIcon

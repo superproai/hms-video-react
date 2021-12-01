@@ -71,7 +71,6 @@ export const ControlBar = ({
       onClick={screenshareButtonOnClick}
       key={2}
       label="Share"
-      id="hms-share"
     >
       <ShareScreenIcon />
     </Button>,
@@ -85,7 +84,6 @@ export const ControlBar = ({
       active={isChatOpen}
       key={4}
       label="Chat"
-      id="hms-chat"
     >
       <ChatUnreadIcon />
     </Button>,
