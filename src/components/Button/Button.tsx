@@ -54,7 +54,9 @@ interface StyledButtonProps {
    */
   styles?: any;
 
-  label?:string
+  label?:string;
+
+  id?:string
 }
 
 type NativeAttrs = Omit<
@@ -102,6 +104,7 @@ export const Button: React.FC<PropsWithChildren<ButtonProps>> = ({
   iconRight,
   children,
   label,
+  id,
   ...props
 }) => {
   const ifDisabled = (s: string, d?: string) => (disabled ? d : s);
@@ -218,6 +221,7 @@ export const Button: React.FC<PropsWithChildren<ButtonProps>> = ({
       disabled={disabled}
       className={`${className} ${label ? 'mb-1' : ''} icon-size-${size}`}
       {...props}
+      id={id}
     >
       {icon && !iconRight && (
         <span className="mr-2 btn-icon flex items-center">{icon}</span>
