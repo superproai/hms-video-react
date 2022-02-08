@@ -13,7 +13,11 @@ export const getVideoTracksFromPeers = (
   }
   const videoTracks: TrackWithPeer[] = [];
   for (let peer of peers) {
-    if (
+    // Show tile even if no video or audio tracks are there
+    if(peer.videoTrack === undefined && peer.audioTrack === undefined) {
+      videoTracks.push({ peer: peer });
+    }
+    else if (
       peer.videoTrack === undefined &&
       peer.audioTrack &&
       tracks[peer.audioTrack]

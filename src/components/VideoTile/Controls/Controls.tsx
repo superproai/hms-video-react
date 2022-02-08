@@ -71,6 +71,7 @@ const TileControls = ({
             <Button
               iconOnly
               active
+              id="hms-mic"
               size="md"
               shape="circle"
               variant="danger"

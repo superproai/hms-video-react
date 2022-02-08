@@ -298,32 +298,64 @@ const Tile = ({
     const children: JSX.Element[] = [];
 
     if (
+      storeHmsAudioTrack &&
+      (storeHmsAudioTrack?.enabled && permissions?.mute)
+    ) {
+      children.push(
+        <ContextMenuItem
+          icon={storeHmsAudioTrack?.enabled ? <MicOnIcon /> : <MicOffIcon />}
+          label={`${storeHmsAudioTrack?.enabled ? 'Mute Audio' : ''} `}
+          key="remoteMuteAudio"
+          onClick={() => toggleTrackEnabled(storeHmsAudioTrack)}
+        />,
+      );
+    }
+
+    if (
       !showScreen &&
-      (storeHmsVideoTrack?.enabled ? permissions?.mute : permissions?.unmute)
+      (storeHmsVideoTrack?.enabled && permissions?.mute)
     ) {
       children.push(
         <ContextMenuItem
           icon={storeHmsVideoTrack?.enabled ? <CamOnIcon /> : <CamOffIcon />}
-          label={`${storeHmsVideoTrack?.enabled ? 'Mute' : 'Unmute'} Video`}
+          label={`${storeHmsVideoTrack?.enabled ? 'Mute Video' : ''} `}
           key="remoteMuteVideo"
           onClick={() => toggleTrackEnabled(storeHmsVideoTrack)}
         />,
       );
     }
 
-    if (
-      storeHmsAudioTrack &&
-      (storeHmsAudioTrack?.enabled ? permissions?.mute : permissions?.unmute)
-    ) {
+    if (permissions?.mute && permissions?.changeRole && peer.roleName != 'host') {
       children.push(
         <ContextMenuItem
-          icon={storeHmsAudioTrack?.enabled ? <MicOnIcon /> : <MicOffIcon />}
-          label={`${storeHmsAudioTrack?.enabled ? 'Mute' : 'Unmute'} Audio`}
-          key="remoteMuteAudio"
-          onClick={() => toggleTrackEnabled(storeHmsAudioTrack)}
+          icon={(peer.roleName == 'guest' || peer.roleName == 'speaker' || peer.roleName == 'mutecamera') ? <MicOnIcon /> : <MicOffIcon />}
+          label={`${peer.roleName == 'guest' || peer.roleName == 'speaker' || peer.roleName == 'mutecamera' ? 'Disable Mic' : 'Enable Mic'} `}
+          key="remoteDisableAudio"
+          onClick={() => {
+            
+            let role = (peer.roleName == 'guest' || peer.roleName == 'mutecamera') ? 'mutecameramic' : 'mutecamera';
+            hmsActions.changeRole(peer.id, role, true);          
+          }}
         />,
       );
     }
+
+    if (permissions?.mute && permissions?.changeRole && peer.roleName != 'host')
+     {
+      children.push(
+        <ContextMenuItem
+          icon={peer.roleName == 'guest' ? <CamOnIcon /> : <CamOffIcon />}
+          label={`${peer.roleName == 'guest' ? 'Disable Camera' : 'Enable Camera'} `}
+          key="remoteDisableVideo"
+          onClick={() => {
+            let role = (peer.roleName == 'guest') ? 'mutecamera' : 'guest';
+            hmsActions.changeRole(peer.id, role, true);          
+          }}
+        />,
+      );
+    }
+
+    
 
     if (!showScreen || !!screenshareAudioTrack) {
       children.push(

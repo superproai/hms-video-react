@@ -70,6 +70,7 @@ export const ControlBar = ({
       shape={buttonDisplay}
       onClick={screenshareButtonOnClick}
       key={2}
+      label="Share"
     >
       <ShareScreenIcon />
     </Button>,
@@ -82,6 +83,7 @@ export const ControlBar = ({
       onClick={chatButtonOnClick}
       active={isChatOpen}
       key={4}
+      label="Chat"
     >
       <ChatUnreadIcon />
     </Button>,
@@ -96,6 +98,8 @@ export const ControlBar = ({
       active={isAudioMuted}
       onClick={audioButtonOnClick}
       key={0}
+      label="Mic"
+      id="hms-mic"
     >
       {isAudioMuted ? <MicOffIcon /> : <MicOnIcon />}
     </Button>,
@@ -107,6 +111,8 @@ export const ControlBar = ({
       active={isVideoMuted}
       onClick={videoButtonOnClick}
       key={1}
+      label="Video"
+      id="hms-video"
     >
       {isVideoMuted ? <CamOffIcon /> : <CamOnIcon />}
     </Button>,
