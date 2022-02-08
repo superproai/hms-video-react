@@ -10,15 +10,17 @@ import {
 } from '@100mslive/hms-video-store';
 import { useHMSTheme } from '../../hooks/HMSThemeProvider';
 import { Button } from '../Button';
-import { ProgressIcon } from '../Icons';
+import { ProgressIcon, DotIcon } from '../Icons';
 import { VideoTile, VideoTileProps } from '../VideoTile';
 import { VideoTileClasses } from '../VideoTile/VideoTile';
 import { PreviewControls } from './Controls';
 import { Input } from '../Input';
+import { Text } from '../Text';
+import { ButtonClasses } from '../Button/Button';
 import { hmsUiClassParserGenerator } from '../../utils/classes';
 import { useHMSActions, useHMSStore } from '../../hooks/HMSRoomProvider';
 import { isBrowser } from '../../utils/is-browser';
-import { ButtonClasses } from '../Button/Button';
+import { isMobileDevice, isSafari } from '../../utils';
 
 interface JoinInfo {
   audioMuted?: boolean;
@@ -37,15 +39,14 @@ export interface PreviewClasses {
   videoTile?: Partial<VideoTileClasses>;
 }
 const defaultClasses: PreviewClasses = {
-  root:
-    'flex w-screen h-full mls:h-auto bg-white dark:bg-black justify-center items-center',
+  root: 'flex w-screen h-full mls:h-auto bg-white dark:bg-black justify-center items-center',
   containerRoot:
     'flex flex-col justify-center items-center w-37.5 h-full md:h-400 pb-4 box-border bg-gray-700 dark:bg-gray-100 text-gray-100 dark:text-white overflow-hidden md:rounded-2xl',
   header:
     'w-4/5 h-2/5 md:w-22.5 md:h-22.5 mt-1.875 mb-7 grid place-items-center',
   helloDiv: 'text-2xl font-medium mb-2',
   nameDiv: 'text-lg leading-6 mb-2',
-  inputRoot: 'p-2 mb-3',
+  inputRoot: 'p-2 mb-1',
 };
 export interface PreviewProps {
   config: HMSConfig;
@@ -89,9 +90,6 @@ export const Preview = ({
   const videoEnabled = useHMSStore(selectIsLocalVideoDisplayEnabled);
   const isAllowedToPublish = useHMSStore(selectIsAllowedToPublish);
 
-  const setAudioEnabled = hmsActions.setLocalAudioEnabled.bind(hmsActions);
-  const setVideoEnabled = hmsActions.setLocalVideoEnabled.bind(hmsActions);
-
   const [name, setName] = useState(config.userName || '');
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -134,6 +132,7 @@ export const Preview = ({
               <VideoTile
                 {...videoTileProps}
                 peer={{ ...localPeer, name }}
+                hmsVideoTrackId={localPeer.videoTrack}
                 objectFit="cover"
                 aspectRatio={{
                   width: 1,
@@ -142,8 +141,6 @@ export const Preview = ({
                 classes={classes?.videoTile}
                 controlsComponent={
                   <PreviewControls
-                    audioButtonOnClick={() => setAudioEnabled(!audioEnabled)}
-                    videoButtonOnClick={() => setVideoEnabled(!videoEnabled)}
                     isAudioMuted={!audioEnabled}
                     isVideoMuted={!videoEnabled}
                     isAudioAllowed={isAllowedToPublish.audio}
@@ -168,7 +165,19 @@ export const Preview = ({
               autoComplete="name"
             />
           </div>
-
+          {/*Warning for safari audio output change*/}
+          {isMobileDevice() && isSafari() && (
+            <div className="mb-3">
+              <DotIcon
+                className="fill-current text-yellow-400 inline mr-2"
+                width="8"
+                height="8"
+              />
+              <Text size="sm" classes={{ root: 'inline' }}>
+                Warning: The audio output can be redirected to earpiece
+              </Text>
+            </div>
+          )}
           {/* joinButton */}
           <Button
             variant="emphasized"

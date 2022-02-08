@@ -1,4 +1,4 @@
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useRef } from 'react';
 import ClickAwayListener from 'react-click-away-listener';
 import {
   HMSPeer,
@@ -9,7 +9,6 @@ import {
   selectScreenShareByPeerID,
   selectAudioTrackVolume,
   selectScreenShareAudioByPeerID,
-  selectTrackAudioByID,
   selectSimulcastLayerByTrack,
   HMSTrack,
   selectTrackByID,
@@ -27,13 +26,19 @@ import {
   MicOnIcon,
   RemovePeerIcon,
   VolumeIcon,
+  VideoExitFullScreenIcon,
+  VideoFullScreenIcon,
+  HandFilledIcon,
 } from '../Icons';
 import { Slider } from '../Slider/Slider';
+import { Button } from '../Button';
 import { useHMSTheme } from '../../hooks/HMSThemeProvider';
 import { useHMSActions, useHMSStore } from '../../hooks/HMSRoomProvider';
-import { getVideoTileLabel } from '../../utils';
+import { getVideoTileLabel, toggleFullScreen } from '../../utils';
 import { hmsUiClassParserGenerator } from '../../utils/classes';
 import './index.css';
+import { AudioLevelIndicator } from '../AudioLevelIndicators';
+import { VideoTileStats } from './Stats';
 
 export interface AdditionalVideoTileProps {
   children?: React.ReactNode;
@@ -95,10 +100,21 @@ export interface VideoTileProps
   classes?: VideoTileClasses;
 
   avatarType?: 'initial';
+
   /**
    * Boolean variable to specify if videoTile is small or not
    */
   compact?: boolean;
+
+  /**
+   * Boolean variable to specify if hand is raised
+   */
+  isHandRaised?: boolean;
+
+  /**
+   * Boolean variable to specify if stats overlay should be shown
+   */
+  showStats?: boolean;
 }
 
 export interface VideoTileClasses extends VideoClasses {
@@ -122,6 +138,14 @@ export interface VideoTileClasses extends VideoClasses {
    * Classes added to Video container if its a circle
    */
   videoContainerCircle?: string;
+  /**
+   * Classes added to fullscreen control
+   */
+  fullScreenControl?: string;
+  /**
+   * Classes added to raisehand control
+   */
+  raiseHand?: string;
 }
 
 const defaultClasses: VideoTileClasses = {
@@ -130,15 +154,18 @@ const defaultClasses: VideoTileClasses = {
   avatarContainer:
     'absolute w-full h-full top-0 left-0 z-10 bg-gray-100 flex items-center justify-center rounded-lg',
   videoContainerCircle: 'rounded-full',
+  fullScreenControl: 'flex items-end justify-end h-full px-2',
+  raiseHand: 'absolute bottom-3 left-3 z-10',
 };
 
 const customClasses: VideoTileClasses = {
   root: 'hmsui-videoTile-showControlsOnHoverParent',
 };
 
-export const VideoTile = ({
+const Tile = ({
   videoTrack,
   peer,
+  hmsVideoTrackId,
   hmsVideoTrack,
   showScreen = false,
   audioLevel = 0,
@@ -151,13 +178,14 @@ export const VideoTile = ({
   displayShape = 'rectangle',
   audioLevelDisplayType = 'border',
   audioLevelDisplayColor,
-  allowRemoteMute = false,
   controlsComponent,
   classes,
   avatarType,
-  compact = false,
   customAvatar,
   contextMenuItems,
+  isHandRaised,
+  showStats = false,
+  compact,
   children,
 }: VideoTileProps) => {
   const { appBuilder, tw, tailwindConfig, toast } = useHMSTheme();
@@ -180,10 +208,6 @@ export const VideoTile = ({
     audioLevelDisplayColor ||
     tailwindConfig.theme.extend.colors.brand.main ||
     '#0F6CFF';
-
-  if (hmsVideoTrack?.source === 'screen') {
-    showScreen = true;
-  }
 
   const selectVideoByPeerID = showScreen
     ? selectScreenShareByPeerID
@@ -230,25 +254,23 @@ export const VideoTile = ({
     showAudioLevel = !showScreen; // don't show audio levels for screenshare
   }
 
-  hmsVideoTrack = hmsVideoTrack || storeHmsVideoTrack;
-
   if (!showScreen && (isAudioMuted === undefined || isAudioMuted === null)) {
     isAudioMuted = storeIsAudioMuted;
   }
 
   if (!showScreen && (isVideoMuted === undefined || isVideoMuted === null)) {
-    isVideoMuted = storeIsVideoMuted || Boolean(hmsVideoTrack?.degraded);
+    isVideoMuted = storeIsVideoMuted || Boolean(storeHmsVideoTrack?.degraded);
   }
 
   const label = getVideoTileLabel(
     peer.name,
     peer.isLocal,
-    hmsVideoTrack?.source,
+    storeHmsVideoTrack?.source,
     storeIsLocallyMuted,
-    hmsVideoTrack?.degraded,
+    storeHmsVideoTrack?.degraded,
   );
 
-  const layerDefinitions = hmsVideoTrack?.layerDefinitions || [];
+  const layerDefinitions = storeHmsVideoTrack?.layerDefinitions || [];
 
   try {
     if (aspectRatio === undefined) {
@@ -261,10 +283,10 @@ export const VideoTile = ({
   avatarType = avatarType || 'initial';
 
   let { width, height } = { width: 1, height: 1 };
-  if (hmsVideoTrack) {
-    if (hmsVideoTrack?.width && hmsVideoTrack.height) {
-      width = hmsVideoTrack.width;
-      height = hmsVideoTrack.height;
+  if (storeHmsVideoTrack) {
+    if (storeHmsVideoTrack?.width && storeHmsVideoTrack.height) {
+      width = storeHmsVideoTrack.width;
+      height = storeHmsVideoTrack.height;
     }
   } else if (videoTrack) {
     let trackSettings = videoTrack.getSettings();
@@ -429,6 +451,18 @@ export const VideoTile = ({
   const impliedAspectRatio =
     aspectRatio && objectFit === 'cover' ? aspectRatio : { width, height };
 
+  const [isFullScreen, setIsFullScreen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const handleFullScreen = async () => {
+    if (!rootRef.current) {
+      return;
+    }
+    const fs = await toggleFullScreen(rootRef.current, !isFullScreen);
+    if (fs !== undefined) {
+      setIsFullScreen(fs);
+    }
+  };
+
   return (
     <ClickAwayListener onClickAway={() => setShowTrigger(false)}>
       <div
@@ -437,6 +471,7 @@ export const VideoTile = ({
         onMouseLeave={() => {
           setShowTrigger(false);
         }}
+        ref={rootRef}
       >
         {!peer.isLocal && (showMenu || showTrigger) && (
           <ContextMenu
@@ -464,20 +499,43 @@ export const VideoTile = ({
                 : { objectFit: 'contain', width: '100%', height: '100%' }
             }
           >
+            {isHandRaised && !showScreen && (
+              <HandFilledIcon
+                className={`${styler('raiseHand')}`}
+                width="40"
+                height="40"
+              />
+            )}
+            {showStats && (
+              <VideoTileStats
+                audioTrackID={storeHmsAudioTrack?.id}
+                videoTrackID={hmsVideoTrack?.id || storeHmsVideoTrack?.id}
+                compact={compact}
+              />
+            )}
             {/* TODO this doesn't work in Safari and looks ugly with contain*/}
             <Video
-              peerId={peer.id}
-              hmsVideoTrack={hmsVideoTrack}
+              hmsVideoTrackId={
+                hmsVideoTrackId || hmsVideoTrack?.id || storeHmsVideoTrack?.id
+              }
               videoTrack={videoTrack}
               objectFit={objectFit}
               isLocal={peer.isLocal}
-              showAudioLevel={showAudioLevel}
-              audioLevel={audioLevel}
-              audioLevelDisplayType={audioLevelDisplayType}
-              audioLevelDisplayColor={'#FF7D0D'}
               displayShape={displayShape}
-              audioTrackId={tileAudioTrack}
             />
+            {showAudioLevel && audioLevelDisplayType === 'border' && (
+              <AudioLevelIndicator
+                audioTrackId={tileAudioTrack}
+                type={'border'}
+                level={audioLevel}
+                displayShape={displayShape}
+                classes={{
+                  videoCircle: styler('videoCircle'),
+                  root: styler('borderAudioRoot'),
+                }}
+                color={audioLevelDisplayColor}
+              />
+            )}
             {isVideoMuted && (
               <div
                 className={`${styler('avatarContainer')} ${
@@ -486,6 +544,20 @@ export const VideoTile = ({
                     : ''
                 }`}
               >
+                {isHandRaised && !showScreen && (
+                  <HandFilledIcon
+                    className={`${styler('raiseHand')}`}
+                    width="40"
+                    height="40"
+                  />
+                )}
+                {showStats && (
+                  <VideoTileStats
+                    audioTrackID={storeHmsAudioTrack?.id}
+                    videoTrackID={hmsVideoTrack?.id || storeHmsVideoTrack?.id}
+                    compact={compact}
+                  />
+                )}
                 {tileAvatar}
               </div>
             )}
@@ -501,6 +573,30 @@ export const VideoTile = ({
                 showGradient={displayShape === 'circle'}
               />
             )}
+            {showScreen && showTrigger && (
+              <div className={styler('fullScreenControl')}>
+                <Button
+                  key="fullscreen"
+                  iconOnly
+                  variant="no-fill"
+                  iconSize="md"
+                  shape="circle"
+                  active={true}
+                  classes={{
+                    root: 'cursor-pointer z-10 mb-2',
+                    rootIconOnlyStandardActive:
+                      'dark:bg-gray-300 dark:text-white text-black dark:hover:bg-gray-300 hover:bg-white',
+                  }}
+                  onClick={handleFullScreen}
+                >
+                  {isFullScreen ? (
+                    <VideoExitFullScreenIcon />
+                  ) : (
+                    <VideoFullScreenIcon />
+                  )}
+                </Button>
+              </div>
+            )}
           </div>
         )}
         {children}
@@ -508,3 +604,5 @@ export const VideoTile = ({
     </ClickAwayListener>
   );
 };
+
+export const VideoTile = React.memo(Tile);

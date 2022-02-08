@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import { AudioLevelDisplayType } from '../../types';
-import { AudioLevelIndicator } from '../AudioLevelIndicators';
 import { useInView } from 'react-intersection-observer';
 import HMSLogger from '../../utils/ui-logger';
 import { hmsUiClassParserGenerator } from '../../utils/classes';
-import { useHMSActions } from '../../hooks/HMSRoomProvider';
-import { HMSTrack } from '@100mslive/hms-video-store';
+import { useHMSActions, useHMSStore } from '../../hooks/HMSRoomProvider';
+import {
+  HMSTrack,
+  HMSTrackID,
+  selectTrackByID,
+} from '@100mslive/hms-video-store';
 import { useHMSTheme } from '../../hooks/HMSThemeProvider';
 
 export type DisplayShapes = 'circle' | 'rectangle';
@@ -45,6 +48,11 @@ export interface VideoProps {
   videoTrack?: MediaStreamTrack;
   /**
    * HMS Video Track is for track related metadata
+   */
+  hmsVideoTrackId?: HMSTrackID;
+
+  /**
+   * @deprecated will be removed in near future
    */
   hmsVideoTrack?: HMSTrack;
   /**
@@ -103,18 +111,13 @@ const defaultClasses: VideoClasses = {
 };
 
 export const Video = ({
-  peerId,
   videoTrack,
+  hmsVideoTrackId,
   hmsVideoTrack,
   objectFit,
   isLocal,
-  showAudioLevel,
-  audioLevel = 0,
-  audioLevelDisplayType,
-  audioLevelDisplayColor,
   displayShape,
   classes,
-  audioTrackId,
 }: VideoProps) => {
   const { tw } = useHMSTheme();
   const styler = useMemo(
@@ -128,6 +131,9 @@ export const Video = ({
     [],
   );
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const hmsStoreVideoTrack = useHMSStore(
+    selectTrackByID(hmsVideoTrackId || hmsVideoTrack?.id),
+  );
 
   const hmsActions = useHMSActions();
 
@@ -143,33 +149,39 @@ export const Video = ({
 
   useEffect(() => {
     (async () => {
-      if (videoRef.current && hmsVideoTrack) {
-        HMSLogger.d('Video InView', hmsVideoTrack, inView);
+      if (videoRef.current && hmsStoreVideoTrack) {
+        HMSLogger.d('Video InView', hmsStoreVideoTrack, inView);
         if (inView) {
-          if (hmsVideoTrack.enabled) {
+          if (hmsStoreVideoTrack.enabled) {
             // attach when in view and enabled
-            await hmsActions.attachVideo(hmsVideoTrack.id, videoRef.current);
+            await hmsActions.attachVideo(
+              hmsStoreVideoTrack.id,
+              videoRef.current,
+            );
           } else {
             // detach when in view but not enabled
-            await hmsActions.detachVideo(hmsVideoTrack.id, videoRef.current);
+            await hmsActions.detachVideo(
+              hmsStoreVideoTrack.id,
+              videoRef.current,
+            );
           }
         } else {
           // detach when not in view
-          await hmsActions.detachVideo(hmsVideoTrack.id, videoRef.current);
+          await hmsActions.detachVideo(hmsStoreVideoTrack.id, videoRef.current);
         }
       }
     })();
   }, [
     inView,
     videoRef,
-    hmsVideoTrack?.id,
-    hmsVideoTrack?.enabled,
-    hmsVideoTrack?.deviceID,
-    hmsVideoTrack?.plugins,
+    hmsStoreVideoTrack?.id,
+    hmsStoreVideoTrack?.enabled,
+    hmsStoreVideoTrack?.deviceID,
+    hmsStoreVideoTrack?.plugins,
   ]);
 
   useEffect(() => {
-    if (videoRef && videoRef.current && videoTrack && !hmsVideoTrack) {
+    if (videoRef && videoRef.current && videoTrack && !hmsStoreVideoTrack) {
       videoRef.current.srcObject = new MediaStream([videoTrack]);
     }
   }, [videoRef, videoTrack, isLocal]);
@@ -184,7 +196,7 @@ export const Video = ({
         className={`${styler('video')} 
           ${displayShape === 'circle' ? styler('videoCircle') : ''}
           ${
-            isLocal && (hmsVideoTrack?.source === 'regular' || videoTrack)
+            isLocal && (hmsStoreVideoTrack?.source === 'regular' || videoTrack)
               ? styler('videoLocal')
               : ''
           }
@@ -192,19 +204,6 @@ export const Video = ({
           ${objectFit === 'cover' ? styler('videoCover') : ''}
         `}
       ></video>
-      {showAudioLevel && audioLevelDisplayType === 'border' && (
-        <AudioLevelIndicator
-          audioTrackId={audioTrackId}
-          type={'border'}
-          level={audioLevel}
-          displayShape={displayShape}
-          classes={{
-            videoCircle: styler('videoCircle'),
-            root: styler('borderAudioRoot'),
-          }}
-          color={audioLevelDisplayColor}
-        />
-      )}
     </>
   );
 };

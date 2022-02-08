@@ -9,14 +9,14 @@ import { useHMSTheme } from '../../hooks/HMSThemeProvider';
 import { CloseIcon, DownCaratIcon, SettingsIcon, UpCaratIcon } from '../Icons';
 import { ParticipantInList } from './ParticipantInList';
 import { hmsUiClassParserGenerator } from '../../utils/classes';
-import groupBy from 'lodash/groupBy';
 import './index.css';
 import ClickAwayListener from 'react-click-away-listener';
 import {
-  HMSPeerWithMuteStatus,
-  selectPeersWithAudioStatus,
   HMSPeer,
+  HMSTrack,
   selectLocalPeerRole,
+  selectPeerCount,
+  selectPeers,
 } from '@100mslive/hms-video-store';
 import { useHMSActions, useHMSStore } from '../../hooks/HMSRoomProvider';
 import {
@@ -27,12 +27,14 @@ import { Text } from '../Text';
 import { selectAvailableRoleNames } from '@100mslive/hms-video-store';
 import { Button } from '../Button';
 import { HMSDialog } from '../Dialog';
+import { groupBy } from '../../utils';
 
 const defaultClasses: ParticipantListClasses = {
   root: 'flex flex-grow border-opacity-0 sm:hidden md:inline-block relative',
   buttonRoot:
-    'text-gray-300 dark:text-gray-500 flex border-opacity-0 focus:outline-none w-52 md:w-60 py-1.5 bg-white',
-  buttonOpen: 'rounded-t-xl dark:bg-gray-100 shadow-1 dark:shadow-none',
+    'text-gray-300 dark:text-gray-500 flex border-opacity-0 focus:outline-none w-31 md:w-31 py-0.5 my-2 bg-white',
+  buttonOpen:
+    'rounded-t-xl rounded-b-xl dark:bg-gray-100 shadow-1 dark:shadow-none',
   buttonClosed: 'rounded-xl dark:bg-black',
   buttonInner:
     'flex flex-grow justify-end md:justify-center px-3 m-0 my-1 tracking-wide self-center',
@@ -40,13 +42,13 @@ const defaultClasses: ParticipantListClasses = {
   carat: 'w-3 h-3',
   // TODO fix shadow border
   menuRoot:
-    'w-52 md:w-60 max-h-116 pb-2 overflow-y-auto rounded-b-xl bg-white shadow-1 dark:shadow-none dark:bg-gray-100 focus:outline-none z-50 absolute',
+    'w-52 md:w-60 max-h-116 pb-2 overflow-y-auto rounded-t-xl rounded-b-xl bg-white shadow-1 dark:shadow-none dark:bg-gray-100 focus:outline-none z-50 absolute right-0',
   menuSection:
     'text-gray-200 dark:text-gray-500 group flex items-center px-3 pt-3 pb-2 text-base',
   menuItem:
     'text-gray-100 dark:text-white group flex items-center flex-nowrap px-3 py-2 text-base hover:bg-gray-600 dark:hover:bg-gray-200',
   menuText: 'flex-1 flex items-center min-w-0',
-  menuIconContainer: 'w-16 flex flex-shrink-0 justify-self-end justify-end',
+  menuIconContainer: 'w-20 flex flex-shrink-0 justify-self-end justify-end',
   onIcon: '',
   offIcon: '',
   dialogContainer:
@@ -69,45 +71,25 @@ const customClasses: ParticipantListClasses = {
   onIcon: 'hmsui-participantList-show-on-group-hover',
 };
 
-export const ParticipantList = ({
-  participantList,
-  classes,
-  onToggle,
-}: ParticipantListProps) => {
-  const { tw, toast } = useHMSTheme();
-  const styler = useMemo(
-    () =>
-      hmsUiClassParserGenerator<ParticipantListClasses>({
-        tw,
-        classes,
-        customClasses,
-        defaultClasses,
-        tag: 'hmsui-participantList',
-      }),
-    [],
-  );
-  const participantsFromStore = useHMSStore(selectPeersWithAudioStatus);
-  const [listOpen, setListOpen] = useState(false);
-  participantList = participantList || participantsFromStore;
-  const handleClick = useCallback(() => setListOpen(open => !open), []);
-  const handleClose = useCallback(() => setListOpen(false), []);
-  const rolesMap: Record<string, HMSPeerWithMuteStatus[]> = groupBy(
-    participantList,
-    participant => participant.peer.roleName,
-  );
-  const roles = Object.keys(rolesMap);
-  const [selectedPeer, setSelectedPeer] = useState<HMSPeer | null>(null);
+const List = ({
+  styler,
+  participantInListProps,
+}: {
+  styler: (s: keyof ParticipantListClasses) => string | undefined;
+  participantInListProps?: (
+    peer: HMSPeer,
+    track?: HMSTrack,
+  ) => Record<string, any>;
+}) => {
+  const { toast } = useHMSTheme();
+  const participantList = useHMSStore(selectPeers);
   const roleNames = useHMSStore(selectAvailableRoleNames);
+  const roles = groupBy(participantList);
   const hmsActions = useHMSActions();
   const localPeerRole = useHMSStore(selectLocalPeerRole);
+  const [selectedPeer, setSelectedPeer] = useState<HMSPeer | null>(null);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [forceChange, setForceChange] = useState(false);
-
-  useEffect(() => {
-    if (onToggle) {
-      onToggle(listOpen);
-    }
-  }, [listOpen]);
 
   const handleRoleChangeClose = () => {
     setSelectedPeer(null);
@@ -131,7 +113,7 @@ export const ParticipantList = ({
       try {
         await hmsActions.changeRole(selectedPeer.id, selectedRole, forceChange);
       } catch (error) {
-        toast(error.message);
+        toast((error as Error).message);
       }
     }
 
@@ -218,65 +200,101 @@ export const ParticipantList = ({
           </div>
         </div>
       </HMSDialog>
-      <ClickAwayListener onClickAway={handleClose}>
-        <div className={`${styler('root')}`}>
-          <button // button to open/close participant list
-            type="button"
-            className={`${styler('buttonRoot')}
-          ${listOpen ? styler('buttonOpen') : styler('buttonClosed')}`}
-            onClick={handleClick}
-          >
-            <div className={`${styler('buttonInner')}`}>
-              {participantList?.length} in room
-              <span className={`${styler('buttonText')}`}>
-                {listOpen ? (
-                  <UpCaratIcon className={styler('carat')} />
-                ) : (
-                  <DownCaratIcon className={styler('carat')} />
-                )}
-              </span>
+      <div
+        className={`${styler('menuRoot')}`}
+        role="menu"
+        aria-orientation="vertical"
+        aria-labelledby="menu-button"
+        tabIndex={-1}
+      >
+        {roles.map(([role, peers]) => (
+          <div key={role}>
+            <span className={`${styler('menuSection')}`} role="menuitem">
+              {role === 'undefined' ? 'Unknown' : role}({peers.length})
+            </span>
+            <div>
+              {peers.map(peer => {
+                const additionalProps = participantInListProps
+                  ? participantInListProps(peer)
+                  : {};
+                return (
+                  <ParticipantInList
+                    key={peer.id}
+                    styler={styler}
+                    name={peer.name}
+                    peerId={peer.id}
+                    onUserSettingsClick={() => {
+                      setSelectedPeer(peer);
+                      setSelectedRole(peer.roleName || '');
+                    }}
+                    {...additionalProps}
+                  />
+                );
+              })}
             </div>
-          </button>
-
-          {listOpen && (
-            <div
-              className={`${styler('menuRoot')}`}
-              role="menu"
-              aria-orientation="vertical"
-              aria-labelledby="menu-button"
-              tabIndex={-1}
-            >
-              {roles &&
-                roles.map(role => (
-                  <div key={role}>
-                    <span
-                      className={`${styler('menuSection')}`}
-                      role="menuitem"
-                    >
-                      {role === 'undefined' ? 'Unknown' : role}(
-                      {rolesMap[role].length})
-                    </span>
-                    <div>
-                      {rolesMap[role] &&
-                        rolesMap[role].map(participant => (
-                          <ParticipantInList
-                            key={participant.peer.id}
-                            styler={styler}
-                            isAudioEnabled={participant.isAudioEnabled}
-                            name={participant.peer.name}
-                            onUserSettingsClick={() => {
-                              setSelectedPeer(participant.peer);
-                              setSelectedRole(participant.peer.roleName || '');
-                            }}
-                          />
-                        ))}
-                    </div>
-                  </div>
-                ))}
-            </div>
-          )}
-        </div>
-      </ClickAwayListener>
+          </div>
+        ))}
+      </div>
     </>
+  );
+};
+
+export const ParticipantList = ({
+  classes,
+  onToggle,
+  participantInListProps,
+}: ParticipantListProps) => {
+  const { tw } = useHMSTheme();
+  const styler = useMemo(
+    () =>
+      hmsUiClassParserGenerator<ParticipantListClasses>({
+        tw,
+        classes,
+        customClasses,
+        defaultClasses,
+        tag: 'hmsui-participantList',
+      }),
+    [],
+  );
+  const peerCount = useHMSStore(selectPeerCount);
+  const [listOpen, setListOpen] = useState(false);
+  const handleClick = useCallback(() => setListOpen(open => !open), []);
+  const handleClose = useCallback(() => setListOpen(false), []);
+
+  useEffect(() => {
+    if (onToggle) {
+      onToggle(listOpen);
+    }
+  }, [listOpen]);
+
+  return (
+    <ClickAwayListener onClickAway={handleClose}>
+      <div className={`${styler('root')}`}>
+        <button // button to open/close participant list
+          type="button"
+          className={`${styler('buttonRoot')}
+          ${listOpen ? styler('buttonOpen') : styler('buttonClosed')}`}
+          onClick={handleClick}
+        >
+          <div className={`${styler('buttonInner')}`}>
+            {peerCount} in room
+            <span className={`${styler('buttonText')}`}>
+              {listOpen ? (
+                <UpCaratIcon className={styler('carat')} />
+              ) : (
+                <DownCaratIcon className={styler('carat')} />
+              )}
+            </span>
+          </div>
+        </button>
+
+        {listOpen && (
+          <List
+            styler={styler}
+            participantInListProps={participantInListProps}
+          />
+        )}
+      </div>
+    </ClickAwayListener>
   );
 };

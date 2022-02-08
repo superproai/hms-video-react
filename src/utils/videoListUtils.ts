@@ -6,6 +6,7 @@ export const getVideoTracksFromPeers = (
   peers: HMSPeer[],
   tracks: Record<HMSTrackID, HMSTrack>,
   showScreenFn: (peer: HMSPeer) => boolean,
+  showTileForAllPeers = false,
 ) => {
   if (!peers || !tracks || !showScreenFn) {
     return [];
@@ -24,8 +25,7 @@ export const getVideoTracksFromPeers = (
       videoTracks.push({ peer: peer });
     } else if (peer.videoTrack && tracks[peer.videoTrack]) {
       videoTracks.push({ track: tracks[peer.videoTrack], peer: peer });
-    }
-    if (showScreenFn(peer) && peer.auxiliaryTracks.length > 0) {
+    } else if (showScreenFn(peer) && peer.auxiliaryTracks.length > 0) {
       const screenShareTrackID = peer.auxiliaryTracks.find(trackID => {
         const track = tracks[trackID];
         return track?.type === 'video' && track?.source === 'screen';
@@ -35,6 +35,8 @@ export const getVideoTracksFromPeers = (
       if (screenShareTrackID) {
         videoTracks.push({ track: tracks[screenShareTrackID], peer: peer });
       }
+    } else if (showTileForAllPeers) {
+      videoTracks.push({ peer: peer });
     }
   }
   return videoTracks;

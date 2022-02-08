@@ -15,7 +15,7 @@ import {
 import { useHMSTheme } from '../../hooks/HMSThemeProvider';
 import { hmsUiClassParserGenerator } from '../../utils/classes';
 import { HMSPeer, HMSTrack, HMSTrackID } from '@100mslive/hms-video-store';
-import { useHMSStore } from '../../hooks/HMSRoomProvider';
+import { useHMSVanillaStore } from '../../hooks/HMSRoomProvider';
 import { selectTracksMap } from '@100mslive/hms-video-store';
 import {
   getVideoTracksFromPeers,
@@ -139,6 +139,12 @@ export interface VideoListProps {
   avatarType?: 'initial';
   compact?: boolean;
   /**
+   * Pass this as true to show a tile for all peers in peer list.
+   * By default only those peers with either audio/video/screen will be shown
+   * Note: Setting this to true will show non-publishing roles as tiles.
+   */
+  showTileForAllPeers?: boolean;
+  /**
    * Props to pass on to each peer's Video Tile
    */
   videoTileProps?: (
@@ -177,6 +183,7 @@ export const VideoList = ({
   allowRemoteMute,
   avatarType,
   compact = false,
+  showTileForAllPeers = false,
   videoTileProps,
   contextMenuItems
 }: VideoListProps) => {
@@ -191,7 +198,10 @@ export const VideoList = ({
       }),
     [],
   );
-  const tracksMap: Record<HMSTrackID, HMSTrack> = useHMSStore(selectTracksMap);
+  const store = useHMSVanillaStore();
+  const tracksMap: Record<HMSTrackID, HMSTrack> = store.getState(
+    selectTracksMap,
+  );
   const { width = 0, height = 0, ref } = useResizeDetector();
 
   if (aspectRatio === undefined) {
@@ -204,6 +214,7 @@ export const VideoList = ({
     peers,
     tracksMap,
     showScreenFn,
+    showTileForAllPeers,
   );
 
   const finalAspectRatio = useMemo(() => {
@@ -306,7 +317,7 @@ export const VideoList = ({
                       >
                         <VideoTile
                           peer={trackPeer.peer}
-                          hmsVideoTrack={trackPeer.track}
+                          hmsVideoTrackId={trackPeer.track?.id}
                           objectFit={objectFit}
                           displayShape={displayShape}
                           audioLevelDisplayType={audioLevelDisplayType}
